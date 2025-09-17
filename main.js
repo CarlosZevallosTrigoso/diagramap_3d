@@ -22,13 +22,18 @@ const geometries = {
 };
 const logicToShapeName = { Rheme: 'Esfera', Dicent: 'Cono', Argument: 'Octaedro' };
 
+// CAMBIO: Ya no necesitamos un material de selección, solo el por defecto.
 const materials = {
-    // El material por defecto ahora es blanco para reaccionar a las luces
     default: new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5 }),
-    selected: new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.5, emissive: 0xfacc15, emissiveIntensity: 0.5 }),
     attractor: new THREE.MeshBasicMaterial({ side: THREE.DoubleSide }),
     text: new THREE.MeshBasicMaterial({ color: 0xffffff })
 };
+
+// CAMBIO: Creamos el objeto para el aura de selección.
+const auraGeometry = new THREE.SphereGeometry(12, 32, 16); // Ligeramente más grande que los puntos.
+const auraMaterial = new THREE.MeshBasicMaterial({ color: 0xfacc15, wireframe: true });
+const selectionAura = new THREE.Mesh(auraGeometry, auraMaterial);
+
 
 const ui = {
     sliders: { icono: document.getElementById('icono'), indice: document.getElementById('indice'), simbolo: document.getElementById('simbolo') },
@@ -59,10 +64,13 @@ function init() {
     controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
 
-    // Se reduce la luz ambiental para dar protagonismo a las de colores
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
     scene.add(ambientLight);
     
+    // CAMBIO: Añadimos el aura a la escena (inicialmente invisible).
+    selectionAura.visible = false;
+    scene.add(selectionAura);
+
     setupPrismVisuals();
     window.addEventListener('resize', onWindowResize);
     animate();
@@ -74,18 +82,15 @@ function setupPrismVisuals() {
     attractorPositions.indice = new THREE.Vector3(radius * Math.cos(THREE.MathUtils.degToRad(30)), radius * Math.sin(THREE.MathUtils.degToRad(30)), 0);
     attractorPositions.simbolo = new THREE.Vector3(radius * Math.cos(THREE.MathUtils.degToRad(270)), radius * Math.sin(THREE.MathUtils.degToRad(270)), 0);
     
-    // --- NUEVA LÓGICA DE LUCES ---
-    // Añadir una luz de color en la posición de cada atractor
     for (const key in attractorPositions) {
         const color = attractorColors[key];
         const pos = attractorPositions[key];
-        const pointLight = new THREE.PointLight(color, 2, planeSize * 2); // Color, Intensidad, Distancia
+        const pointLight = new THREE.PointLight(color, 2, planeSize * 2);
         pointLight.position.copy(pos);
         scene.add(pointLight);
     }
     
     const gridHelper = new THREE.GridHelper(planeSize, 10, 0x888888, 0x444444);
-    
     const planes = [ { z: 0, label: 'Sinsigno' }, { z: 150, label: 'Legisigno' }, { z: -150, label: 'Qualisigno' } ];
 
     planes.forEach(p => {
@@ -99,20 +104,15 @@ function setupPrismVisuals() {
     for (const key in attractorPositions) {
         const pos = attractorPositions[key];
         const color = attractorColors[key];
-        
         const attractorMesh = new THREE.Mesh(new THREE.SphereGeometry(8), materials.attractor.clone());
         attractorMesh.material.color.setHex(color);
         attractorMesh.position.copy(pos);
         scene.add(attractorMesh);
-
         const labelText = key.charAt(0).toUpperCase() + key.slice(1);
         const labelPos = pos.clone().add(new THREE.Vector3(0, 20, 0));
         create3DText(labelText, labelPos, color, 10);
     }
 }
-
-// El resto del código JS (desde create3DText hasta el final) se mantiene igual que en la versión anterior.
-// Aquí lo incluyo completo para tu comodidad.
 
 function create3DText(text, position, color, size) {
     if (!font) return;
@@ -163,18 +163,25 @@ function deletePoint(idToDelete) {
         point.mesh.geometry.dispose();
         point.mesh.material.dispose();
         points.splice(index, 1);
-        if (selectedPoint && selectedPoint.id === idToDelete) selectedPoint = null;
+        if (selectedPoint && selectedPoint.id === idToDelete) {
+            selectedPoint = null;
+            // CAMBIO: Ocultar el aura si se borra el punto seleccionado.
+            selectionAura.visible = false;
+        }
         updatePointList();
     }
 }
 
 function selectPoint(pointToSelect) {
-    if (selectedPoint) selectedPoint.mesh.material = materials.default;
     selectedPoint = pointToSelect;
+    
+    // CAMBIO: En lugar de cambiar el material, movemos y mostramos el aura.
     if (selectedPoint) {
-        selectedPoint.mesh.material = materials.selected;
+        selectionAura.position.copy(selectedPoint.mesh.position);
+        selectionAura.visible = true;
         updateUIFromPoint(selectedPoint);
     } else {
+        selectionAura.visible = false;
         onControlsChange(); 
     }
     updatePointList();
@@ -219,6 +226,10 @@ function onControlsChange() {
         selectedPoint.values.logic = ui.selects.logic.value;
         
         selectedPoint.mesh.position.copy(valuesToPosition(selectedPoint.values));
+        
+        // CAMBIO: El aura debe seguir al objeto si se mueve con los sliders.
+        selectionAura.position.copy(selectedPoint.mesh.position);
+
         if (selectedPoint.mesh.geometry !== geometries[selectedPoint.values.logic]) {
             selectedPoint.mesh.geometry.dispose();
             selectedPoint.mesh.geometry = geometries[selectedPoint.values.logic];
