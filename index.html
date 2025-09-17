@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Prisma Semiótico 3D v2</title>
+    <title>Prisma Semiótico 3D v3</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -11,59 +11,60 @@
     <div id="ui-container">
         <div class="panel-section">
             <h1>Prisma Semiótico</h1>
-            <p class="small">El color del plano (XY) representa la mezcla Ícono/Índice/Símbolo. La altura (Z) y la forma dependen de las otras tricotomías.</p>
-        </div>
-
-        <div class="panel-section">
-            <h2>1ª Tricotomía (Posición XY y Color)</h2>
-            <label>Ícono: <span id="iconoVal">33/100</span></label>
-            <input id="icono" type="range" min="1" max="100" value="33">
-
-            <label>Índice: <span id="indiceVal">33/100</span></label>
-            <input id="indice" type="range" min="1" max="100" value="33">
-
-            <label>Símbolo: <span id="simboloVal">33/100</span></label>
-            <input id="simbolo" type="range" min="1" max="100" value="33">
-        </div>
-
-        <div class="panel-section">
-            <h2>2ª Tricotomía (Altura Z)</h2>
-            <label for="type-select">Tipo de Signo:</label>
-            <select id="type-select">
-                <option value="Sinsign" selected>Sinsigno (Existente)</option>
-                <option value="Legisign">Legisigno (Ley)</option>
-                <option value="Qualisign">Qualisigno (Cualidad)</option>
-            </select>
-        </div>
-
-        <div class="panel-section">
-            <h2>3ª Tricotomía (Forma)</h2>
-            <label for="logic-select">Tipo de Lógica: <span id="shape-name" class="dynamic-label"></span></label>
-            <select id="logic-select">
-                <option value="Rheme">Rema (Potencial)</option>
-                <option value="Dicent" selected>Dicente (Afirmación)</option>
-                <option value="Argument">Argumento (Inferencia)</option>
-            </select>
-        </div>
-
-        <div class="panel-section">
-            <div class="legend">
-                <h3>Leyenda de Formas</h3>
-                <ul class="legend-list">
-                    <li><span class="shape-sphere">●</span> Esfera: Rema</li>
-                    <li><span class="shape-cone">▲</span> Cono: Dicente</li>
-                    <li><span class="shape-octa">♦</span> Octaedro: Argumento</li>
-                </ul>
-            </div>
+            <p class="small">El color de los objetos depende de su cercanía a las luces de los atractores (Rojo: Ícono, Verde: Índice, Azul: Símbolo).</p>
         </div>
 
         <div class="panel-section">
             <button id="addBtn">Agregar Elemento</button>
         </div>
-
         <div class="panel-section list-section">
             <h2>Elementos</h2>
             <div id="item-list"></div>
+        </div>
+        
+        <div class="scroll-area">
+            <div class="panel-section">
+                <h2>1ª Tricotomía (Posición XY)</h2>
+                <label>Ícono: <span id="iconoVal">33/100</span></label>
+                <input id="icono" type="range" min="1" max="100" value="33">
+
+                <label>Índice: <span id="indiceVal">33/100</span></label>
+                <input id="indice" type="range" min="1" max="100" value="33">
+
+                <label>Símbolo: <span id="simboloVal">33/100</span></label>
+                <input id="simbolo" type="range" min="1" max="100" value="33">
+            </div>
+
+            <div class="panel-section">
+                <h2>2ª Tricotomía (Altura Z)</h2>
+                <label for="type-select">Tipo de Signo:</label>
+                <select id="type-select">
+                    <option value="Sinsign" selected>Sinsigno (Existente)</option>
+                    <option value="Legisign">Legisigno (Ley)</option>
+                    <option value="Qualisign">Qualisigno (Cualidad)</option>
+                </select>
+            </div>
+
+            <div class="panel-section">
+                <h2>3ª Tricotomía (Forma)</h2>
+                <label for="logic-select">Tipo de Lógica: <span id="shape-name" class="dynamic-label"></span></label>
+                <select id="logic-select">
+                    <option value="Rheme">Rema (Potencial)</option>
+                    <option value="Dicent" selected>Dicente (Afirmación)</option>
+                    <option value="Argument">Argumento (Inferencia)</option>
+                </select>
+            </div>
+
+            <div class="panel-section">
+                <div class="legend">
+                    <h3>Leyenda de Formas</h3>
+                    <ul class="legend-list">
+                        <li><span class="shape-sphere">●</span> Esfera: Rema</li>
+                        <li><span class="shape-cone">▲</span> Cono: Dicente</li>
+                        <li><span class="shape-octa">♦</span> Octaedro: Argumento</li>
+                    </ul>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -75,7 +76,6 @@
         }
     }
     </script>
-
     <script type="module" src="main.js"></script>
 </body>
 </html>
