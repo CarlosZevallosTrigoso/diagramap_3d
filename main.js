@@ -10,9 +10,9 @@ let points = [];
 let selectedPoint = null;
 const attractorPositions = {};
 const attractorColors = {
-    icono:   { r: 239, g: 68, b: 68 },
-    indice:  { r: 34, g: 197, b: 94 },
-    simbolo: { r: 56, g: 189, b: 248 }
+    icono:   0xef4444, // Rojo
+    indice:  0x22c56e, // Verde
+    simbolo: 0x38bdf8  // Azul
 };
 
 const geometries = {
@@ -23,6 +23,7 @@ const geometries = {
 const logicToShapeName = { Rheme: 'Esfera', Dicent: 'Cono', Argument: 'Octaedro' };
 
 const materials = {
+    // El material por defecto ahora es blanco para reaccionar a las luces
     default: new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5 }),
     selected: new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.5, emissive: 0xfacc15, emissiveIntensity: 0.5 }),
     attractor: new THREE.MeshBasicMaterial({ side: THREE.DoubleSide }),
@@ -58,12 +59,10 @@ function init() {
     controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
 
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+    // Se reduce la luz ambiental para dar protagonismo a las de colores
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
     scene.add(ambientLight);
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 2.0);
-    directionalLight.position.set(150, 200, 300);
-    scene.add(directionalLight);
-
+    
     setupPrismVisuals();
     window.addEventListener('resize', onWindowResize);
     animate();
@@ -74,90 +73,46 @@ function setupPrismVisuals() {
     attractorPositions.icono = new THREE.Vector3(radius * Math.cos(THREE.MathUtils.degToRad(150)), radius * Math.sin(THREE.MathUtils.degToRad(150)), 0);
     attractorPositions.indice = new THREE.Vector3(radius * Math.cos(THREE.MathUtils.degToRad(30)), radius * Math.sin(THREE.MathUtils.degToRad(30)), 0);
     attractorPositions.simbolo = new THREE.Vector3(radius * Math.cos(THREE.MathUtils.degToRad(270)), radius * Math.sin(THREE.MathUtils.degToRad(270)), 0);
-
-    // Crear la textura con el gradiente de color
-    const gradientTexture = createGradientTexture();
-    const planeMaterial = new THREE.MeshBasicMaterial({ map: gradientTexture });
-
-    // Crear y posicionar los 3 planos con la textura
-    const planeGeometry = new THREE.PlaneGeometry(planeSize, planeSize);
-    const planes = [
-        { z: 0, label: 'Sinsigno' },
-        { z: 150, label: 'Legisigno' },
-        { z: -150, label: 'Qualisigno' }
-    ];
+    
+    // --- NUEVA LÓGICA DE LUCES ---
+    // Añadir una luz de color en la posición de cada atractor
+    for (const key in attractorPositions) {
+        const color = attractorColors[key];
+        const pos = attractorPositions[key];
+        const pointLight = new THREE.PointLight(color, 2, planeSize * 2); // Color, Intensidad, Distancia
+        pointLight.position.copy(pos);
+        scene.add(pointLight);
+    }
+    
+    const gridHelper = new THREE.GridHelper(planeSize, 10, 0x888888, 0x444444);
+    
+    const planes = [ { z: 0, label: 'Sinsigno' }, { z: 150, label: 'Legisigno' }, { z: -150, label: 'Qualisigno' } ];
 
     planes.forEach(p => {
-        const planeMesh = new THREE.Mesh(planeGeometry, planeMaterial);
-        planeMesh.position.z = p.z;
-        scene.add(planeMesh);
-        
-        const grid = new THREE.GridHelper(planeSize, 10, 0xffffff, 0xffffff);
+        const grid = gridHelper.clone();
         grid.position.z = p.z;
         grid.rotation.x = Math.PI / 2;
         scene.add(grid);
-        
         create3DText(p.label, new THREE.Vector3(-planeSize / 2 - 80, -planeSize / 2, p.z), 0xffffff, 12);
     });
 
-    // Dibujar Atractores y sus Etiquetas en el plano central
     for (const key in attractorPositions) {
         const pos = attractorPositions[key];
-        const colorHex = new THREE.Color(`rgb(${attractorColors[key].r}, ${attractorColors[key].g}, ${attractorColors[key].b})`).getHex();
+        const color = attractorColors[key];
         
         const attractorMesh = new THREE.Mesh(new THREE.SphereGeometry(8), materials.attractor.clone());
-        attractorMesh.material.color.setHex(colorHex);
+        attractorMesh.material.color.setHex(color);
         attractorMesh.position.copy(pos);
         scene.add(attractorMesh);
 
         const labelText = key.charAt(0).toUpperCase() + key.slice(1);
         const labelPos = pos.clone().add(new THREE.Vector3(0, 20, 0));
-        create3DText(labelText, labelPos, colorHex, 10);
+        create3DText(labelText, labelPos, color, 10);
     }
 }
 
-// --- FUNCIÓN PARA CREAR LA TEXTURA DEL GRADIENTE ---
-function createGradientTexture() {
-    const size = 512;
-    const canvas = document.createElement('canvas');
-    canvas.width = size;
-    canvas.height = size;
-    const context = canvas.getContext('2d');
-    const imageData = context.getImageData(0, 0, size, size);
-    const data = imageData.data;
-
-    const pI = { x: 0, y: size };
-    const pD = { x: size, y: size };
-    const pS = { x: size / 2, y: 0 };
-    const cI = attractorColors.icono;
-    const cD = attractorColors.indice;
-    const cS = attractorColors.simbolo;
-
-    for (let i = 0; i < data.length; i += 4) {
-        const x = (i / 4) % size;
-        const y = Math.floor((i / 4) / size);
-
-        // Coordenadas baricéntricas (simplificado para triángulo equilátero)
-        const totalArea = 0.5 * size * size;
-        const areaI = 0.5 * Math.abs(x * (pD.y - pS.y) + pD.x * (pS.y - y) + pS.x * (y - pD.y));
-        const areaD = 0.5 * Math.abs(pI.x * (y - pS.y) + x * (pS.y - pI.y) + pS.x * (pI.y - y));
-        const areaS = 0.5 * Math.abs(pI.x * (pD.y - y) + pD.x * (y - pI.y) + x * (pI.y - pD.y));
-
-        let wI = areaI / totalArea;
-        let wD = areaD / totalArea;
-        let wS = areaS / totalArea;
-
-        const sum = wI + wD + wS;
-        wI /= sum; wD /= sum; wS /= sum;
-        
-        data[i] = cI.r * wI + cD.r * wD + cS.r * wS;
-        data[i + 1] = cI.g * wI + cD.g * wD + cS.g * wS;
-        data[i + 2] = cI.b * wI + cD.b * wD + cS.b * wS;
-        data[i + 3] = 255;
-    }
-    context.putImageData(imageData, 0, 0);
-    return new THREE.CanvasTexture(canvas);
-}
+// El resto del código JS (desde create3DText hasta el final) se mantiene igual que en la versión anterior.
+// Aquí lo incluyo completo para tu comodidad.
 
 function create3DText(text, position, color, size) {
     if (!font) return;
@@ -174,9 +129,6 @@ function animate() {
     controls.update();
     renderer.render(scene, camera);
 }
-
-// --- LÓGICA DE LA APLICACIÓN (SIN CAMBIOS) ---
-// (Esta parte es igual a la versión anterior)
 
 function addPoint() {
     const name = prompt("Ingresa un nombre para el nuevo elemento:", "Elemento sin título");
@@ -223,7 +175,6 @@ function selectPoint(pointToSelect) {
         selectedPoint.mesh.material = materials.selected;
         updateUIFromPoint(selectedPoint);
     } else {
-        // Si no hay nada seleccionado, resetea la UI a un estado neutral
         onControlsChange(); 
     }
     updatePointList();
@@ -281,7 +232,6 @@ function setupUIListeners() {
     ui.addBtn.addEventListener('click', addPoint);
     for (const key in ui.sliders) ui.sliders[key].addEventListener('input', onControlsChange);
     for (const key in ui.selects) ui.selects[key].addEventListener('change', onControlsChange);
-    // Dispara un cambio inicial para establecer el nombre de la forma
     onControlsChange();
 }
 
