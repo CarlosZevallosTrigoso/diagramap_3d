@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cubo Semiótico 3D con Three.js</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div id="ui-container">
+        <div class="panel-section">
+            <h1>Cubo Semiótico 3D</h1>
+            <p class="small">Usa el mouse para rotar (clic izquierdo), hacer zoom (rueda) y mover la cámara (clic derecho).</p>
+        </div>
+
+        <div class="panel-section">
+            <h2>Posición del Elemento</h2>
+            <label>Eje X (Ícono): <span id="iconoVal">50/100</span></label>
+            <input id="icono" type="range" min="1" max="100" value="50">
+
+            <label>Eje Y (Índice): <span id="indiceVal">50/100</span></label>
+            <input id="indice" type="range" min="1" max="100" value="50">
+
+            <label>Eje Z (Símbolo): <span id="simboloVal">50/100</span></label>
+            <input id="simbolo" type="range" min="1" max="100" value="50">
+        </div>
+
+        <div class="panel-section">
+            <button id="addBtn">Agregar Elemento</button>
+        </div>
+
+        <div class="panel-section list-section">
+            <h2>Elementos</h2>
+            <div id="item-list"></div>
+        </div>
+    </div>
+
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.158.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.158.0/examples/jsm/"
+        }
+    }
+    </script>
+
+    <script type="module" src="main.js"></script>
+</body>
+</html>
