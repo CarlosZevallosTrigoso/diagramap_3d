@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Prisma Semiótico 3D con Three.js</title>
+    <title>Prisma Semiótico 3D v2</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -11,11 +11,11 @@
     <div id="ui-container">
         <div class="panel-section">
             <h1>Prisma Semiótico</h1>
-            <p class="small">La posición en el plano (XY) depende de Ícono/Índice/Símbolo. La altura (Z) y la forma dependen de las otras tricotomías.</p>
+            <p class="small">El color del plano (XY) representa la mezcla Ícono/Índice/Símbolo. La altura (Z) y la forma dependen de las otras tricotomías.</p>
         </div>
 
         <div class="panel-section">
-            <h2>1ª Tricotomía (Posición XY)</h2>
+            <h2>1ª Tricotomía (Posición XY y Color)</h2>
             <label>Ícono: <span id="iconoVal">33/100</span></label>
             <input id="icono" type="range" min="1" max="100" value="33">
 
@@ -38,7 +38,7 @@
 
         <div class="panel-section">
             <h2>3ª Tricotomía (Forma)</h2>
-            <label for="logic-select">Tipo de Lógica:</label>
+            <label for="logic-select">Tipo de Lógica: <span id="shape-name" class="dynamic-label"></span></label>
             <select id="logic-select">
                 <option value="Rheme">Rema (Potencial)</option>
                 <option value="Dicent" selected>Dicente (Afirmación)</option>
@@ -47,16 +47,18 @@
         </div>
 
         <div class="panel-section">
-            <button id="addBtn">Agregar Elemento</button>
+            <div class="legend">
+                <h3>Leyenda de Formas</h3>
+                <ul class="legend-list">
+                    <li><span class="shape-sphere">●</span> Esfera: Rema</li>
+                    <li><span class="shape-cone">▲</span> Cono: Dicente</li>
+                    <li><span class="shape-octa">♦</span> Octaedro: Argumento</li>
+                </ul>
+            </div>
         </div>
-        
+
         <div class="panel-section">
-            <h2>Leyenda de Formas</h2>
-            <ul class="legend-list">
-                <li><span class="shape-sphere">●</span> Rema (Potencial)</li>
-                <li><span class="shape-cone">▲</span> Dicente (Afirmación)</li>
-                <li><span class="shape-octa">♦</span> Argumento (Inferencia)</li>
-            </ul>
+            <button id="addBtn">Agregar Elemento</button>
         </div>
 
         <div class="panel-section list-section">
