@@ -1,0 +1,134 @@
+:root {
+    --bg: #111111;
+    --panel-bg: rgba(28, 28, 30, 0.85);
+    --text-color: #eaeaea;
+    --muted-color: #888;
+    --accent-color: #a78bfa;
+    --input-bg: #333;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background-color: var(--bg);
+    color: var(--text-color);
+    overflow: hidden; /* Evita barras de scroll */
+}
+
+/* El canvas de Three.js ocupará todo el fondo */
+canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: -1;
+}
+
+#ui-container {
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    width: 320px;
+    max-height: calc(100vh - 30px);
+    background-color: var(--panel-bg);
+    border: 1px solid #333;
+    border-radius: 12px;
+    padding: 20px;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.list-section {
+    flex-grow: 1;
+    overflow-y: auto;
+}
+
+h1 {
+    font-size: 20px;
+    margin: 0 0 5px 0;
+}
+
+h2 {
+    font-size: 16px;
+    margin: 0 0 10px 0;
+    color: var(--muted-color);
+    border-bottom: 1px solid #444;
+    padding-bottom: 5px;
+}
+
+.small {
+    font-size: 12px;
+    color: var(--muted-color);
+}
+
+label {
+    display: block;
+    font-size: 14px;
+    margin-bottom: 5px;
+}
+
+input[type="range"] {
+    width: 100%;
+    margin-bottom: 15px;
+}
+
+button {
+    width: 100%;
+    padding: 12px;
+    font-size: 16px;
+    font-weight: bold;
+    background-color: var(--accent-color);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+button:hover {
+    background-color: #8e6dda;
+}
+
+#item-list {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.list-item {
+    padding: 10px;
+    background-color: #2a2a2e;
+    border-radius: 6px;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: background-color 0.2s, border-color 0.2s;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.list-item:hover {
+    background-color: #3a3a3e;
+}
+
+.list-item.selected {
+    background-color: #4a4a4e;
+    border-color: var(--accent-color);
+}
+
+.delete-btn {
+    background-color: #ef4444;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+    font-weight: bold;
+}
