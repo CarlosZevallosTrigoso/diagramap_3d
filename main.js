@@ -15,6 +15,10 @@ const attractorColors = {
     simbolo: 0x38bdf8  // Azul
 };
 
+// NUEVO: Variables para el Raycasting
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+
 const geometries = {
     Rheme: new THREE.SphereGeometry(10, 32, 16),
     Dicent: new THREE.ConeGeometry(10, 20, 32),
@@ -22,15 +26,13 @@ const geometries = {
 };
 const logicToShapeName = { Rheme: 'Esfera', Dicent: 'Cono', Argument: 'Octaedro' };
 
-// CAMBIO: Ya no necesitamos un material de selección, solo el por defecto.
 const materials = {
     default: new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5 }),
     attractor: new THREE.MeshBasicMaterial({ side: THREE.DoubleSide }),
     text: new THREE.MeshBasicMaterial({ color: 0xffffff })
 };
 
-// CAMBIO: Creamos el objeto para el aura de selección.
-const auraGeometry = new THREE.SphereGeometry(12, 32, 16); // Ligeramente más grande que los puntos.
+const auraGeometry = new THREE.SphereGeometry(12, 32, 16);
 const auraMaterial = new THREE.MeshBasicMaterial({ color: 0xfacc15, wireframe: true });
 const selectionAura = new THREE.Mesh(auraGeometry, auraMaterial);
 
@@ -67,12 +69,15 @@ function init() {
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
     scene.add(ambientLight);
     
-    // CAMBIO: Añadimos el aura a la escena (inicialmente invisible).
     selectionAura.visible = false;
     scene.add(selectionAura);
 
     setupPrismVisuals();
     window.addEventListener('resize', onWindowResize);
+    
+    // NUEVO: Añadimos el listener para el clic del mouse en el canvas.
+    renderer.domElement.addEventListener('click', onCanvasClick);
+    
     animate();
 }
 
@@ -130,6 +135,39 @@ function animate() {
     renderer.render(scene, camera);
 }
 
+// NUEVO: Función para manejar los clics en la escena 3D.
+function onCanvasClick(event) {
+    // Calcula la posición del mouse en coordenadas normalizadas (-1 a +1)
+    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
+
+    // Actualiza el raycaster con la cámara y la posición del mouse
+    raycaster.setFromCamera(mouse, camera);
+
+    // Obtiene la lista de objetos que el rayo intersecta.
+    // Solo nos interesan los objetos que son 'hijos' directos de la escena.
+    const intersects = raycaster.intersectObjects(scene.children);
+
+    let foundPoint = null;
+    if (intersects.length > 0) {
+        // Recorremos los objetos intersectados.
+        for (const intersect of intersects) {
+            // Buscamos si el objeto 3D intersectado (intersect.object) 
+            // corresponde a algún 'mesh' de nuestros puntos.
+            const point = points.find(p => p.mesh === intersect.object);
+            if (point) {
+                foundPoint = point;
+                break; // Si encontramos uno, dejamos de buscar.
+            }
+        }
+    }
+    
+    // Si encontramos un punto, lo seleccionamos.
+    // Si no (foundPoint es null), deseleccionamos el actual.
+    selectPoint(foundPoint);
+}
+
+
 function addPoint() {
     const name = prompt("Ingresa un nombre para el nuevo elemento:", "Elemento sin título");
     if (!name || name.trim() === "") return;
@@ -165,7 +203,6 @@ function deletePoint(idToDelete) {
         points.splice(index, 1);
         if (selectedPoint && selectedPoint.id === idToDelete) {
             selectedPoint = null;
-            // CAMBIO: Ocultar el aura si se borra el punto seleccionado.
             selectionAura.visible = false;
         }
         updatePointList();
@@ -173,15 +210,20 @@ function deletePoint(idToDelete) {
 }
 
 function selectPoint(pointToSelect) {
+    // Si hacemos clic en el mismo punto que ya está seleccionado, no hacemos nada.
+    if (selectedPoint && pointToSelect && selectedPoint.id === pointToSelect.id) {
+        return;
+    }
+    
     selectedPoint = pointToSelect;
     
-    // CAMBIO: En lugar de cambiar el material, movemos y mostramos el aura.
     if (selectedPoint) {
         selectionAura.position.copy(selectedPoint.mesh.position);
         selectionAura.visible = true;
         updateUIFromPoint(selectedPoint);
     } else {
         selectionAura.visible = false;
+        // Si no seleccionamos nada, reseteamos la UI a los valores por defecto.
         onControlsChange(); 
     }
     updatePointList();
@@ -227,7 +269,6 @@ function onControlsChange() {
         
         selectedPoint.mesh.position.copy(valuesToPosition(selectedPoint.values));
         
-        // CAMBIO: El aura debe seguir al objeto si se mueve con los sliders.
         selectionAura.position.copy(selectedPoint.mesh.position);
 
         if (selectedPoint.mesh.geometry !== geometries[selectedPoint.values.logic]) {
