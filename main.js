@@ -32,13 +32,14 @@ const geometries = {
 const logicToShapeName = { Rheme: 'Esfera', Dicent: 'Cono', Argument: 'Octaedro' };
 
 const materials = {
-    default: new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5, side: THREE.DoubleSide }), // Agregado DoubleSide por si acaso
+    default: new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5, side: THREE.DoubleSide }),
     attractor: new THREE.MeshBasicMaterial({ side: THREE.DoubleSide }),
     text: new THREE.MeshBasicMaterial({ color: 0xffffff })
 };
 
+// CAMBIO: Material del aura de selección: color más suave, opacidad reducida.
 const auraGeometry = new THREE.SphereGeometry(12, 32, 16);
-const auraMaterial = new THREE.MeshBasicMaterial({ color: 0xfacc15, wireframe: true });
+const auraMaterial = new THREE.MeshBasicMaterial({ color: 0xADD8E6, wireframe: true, transparent: true, opacity: 0.4 }); // Azul claro, más transparente
 const selectionAura = new THREE.Mesh(auraGeometry, auraMaterial);
 
 
@@ -62,7 +63,6 @@ fontLoader.load('https://unpkg.com/three@0.158.0/examples/fonts/helvetiker_regul
 function init() {
     scene = new THREE.Scene();
     camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
-    // CAMBIO: Nueva posición de la cámara para una mejor vista isométrica del prisma vertical.
     camera.position.set(250, 250, 250);
 
     renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -71,7 +71,6 @@ function init() {
 
     controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
-    // CAMBIO: Apuntar la cámara al centro del prisma (al nivel del Sinsigno).
     controls.target.set(0, 0, 0);
 
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
@@ -87,25 +86,21 @@ function init() {
     animate();
 }
 
-// NUEVO: Función para crear la rejilla ternaria.
 function createTernaryGrid(radius, divisions) {
     const group = new THREE.Group();
     const material = new THREE.LineBasicMaterial({ color: 0x666666, transparent: true, opacity: 0.5 });
 
-    // Vértices del triángulo equilátero en el plano XZ
     const v1 = new THREE.Vector3(radius * Math.cos(THREE.MathUtils.degToRad(150)), 0, radius * Math.sin(THREE.MathUtils.degToRad(150)));
     const v2 = new THREE.Vector3(radius * Math.cos(THREE.MathUtils.degToRad(30)), 0, radius * Math.sin(THREE.MathUtils.degToRad(30)));
     const v3 = new THREE.Vector3(radius * Math.cos(THREE.MathUtils.degToRad(270)), 0, radius * Math.sin(THREE.MathUtils.degToRad(270)));
     
-    const vertices = [v1, v2, v3, v1]; // Cerrar el triángulo
+    const vertices = [v1, v2, v3, v1];
     let geometry = new THREE.BufferGeometry().setFromPoints(vertices);
     group.add(new THREE.Line(geometry, material));
 
-    // Líneas internas
     for (let i = 1; i <= divisions; i++) {
         const t = i / divisions;
         
-        // Interpola puntos en cada lado del triángulo
         const p12 = new THREE.Vector3().lerpVectors(v1, v2, t);
         const p13 = new THREE.Vector3().lerpVectors(v1, v3, t);
         const p23 = new THREE.Vector3().lerpVectors(v2, v3, t);
@@ -113,7 +108,6 @@ function createTernaryGrid(radius, divisions) {
         const p31 = new THREE.Vector3().lerpVectors(v3, v1, t);
         const p32 = new THREE.Vector3().lerpVectors(v3, v2, t);
 
-        // Dibuja las 3 series de líneas paralelas a los lados
         let line1_geom = new THREE.BufferGeometry().setFromPoints([p12, p13]);
         let line2_geom = new THREE.BufferGeometry().setFromPoints([p23, p21]);
         let line3_geom = new THREE.BufferGeometry().setFromPoints([p31, p32]);
@@ -130,7 +124,6 @@ function createTernaryGrid(radius, divisions) {
 function setupPrismVisuals() {
     const radius = planeSize / 2;
 
-    // CAMBIO: Posiciones de los atractores en el plano XZ (Y es 0).
     attractorPositions.icono = new THREE.Vector3(radius * Math.cos(THREE.MathUtils.degToRad(150)), 0, radius * Math.sin(THREE.MathUtils.degToRad(150)));
     attractorPositions.indice = new THREE.Vector3(radius * Math.cos(THREE.MathUtils.degToRad(30)), 0, radius * Math.sin(THREE.MathUtils.degToRad(30)));
     attractorPositions.simbolo = new THREE.Vector3(radius * Math.cos(THREE.MathUtils.degToRad(270)), 0, radius * Math.sin(THREE.MathUtils.degToRad(270)));
@@ -138,27 +131,23 @@ function setupPrismVisuals() {
     for (const key in attractorPositions) {
         const color = attractorColors[key];
         const pos = attractorPositions[key];
-        const pointLight = new THREE.PointLight(color, 2, planeSize * 3); // Aumentado el alcance de la luz
-        // CAMBIO: Las luces ahora rodean el prisma verticalmente también
-        pointLight.position.copy(pos).add(new THREE.Vector3(0, 50, 0)); // Posiciona las luces ligeramente arriba del plano medio
+        const pointLight = new THREE.PointLight(color, 2, planeSize * 3);
+        pointLight.position.copy(pos).add(new THREE.Vector3(0, 50, 0));
         scene.add(pointLight);
     }
     
-    // CAMBIO: Definición de los planos verticales.
     const planes = [
         { y: 0,   label: 'Sinsigno' },
         { y: 150, label: 'Legisigno' },
         { y: -150,label: 'Qualisigno' }
     ];
 
-    // CAMBIO: Se crea una rejilla ternaria en lugar del GridHelper.
     const ternaryGrid = createTernaryGrid(radius, 10);
 
     planes.forEach(p => {
         const grid = ternaryGrid.clone();
         grid.position.y = p.y;
         scene.add(grid);
-        // CAMBIO: Posición de las etiquetas para el layout vertical.
         create3DText(p.label, new THREE.Vector3(-radius - 80, p.y, 0), 0xffffff, 12);
     });
 
@@ -168,11 +157,10 @@ function setupPrismVisuals() {
         const attractorMesh = new THREE.Mesh(new THREE.SphereGeometry(8), materials.attractor.clone());
         attractorMesh.material.color.setHex(color);
         attractorMesh.position.copy(pos);
-        scene.add(attractorMesh); // Los atractores se quedan en el plano medio (y=0)
+        scene.add(attractorMesh);
         
         const labelText = key.charAt(0).toUpperCase() + key.slice(1);
-        // CAMBIO: Posición de las etiquetas de los atractores.
-        const labelPos = pos.clone().add(new THREE.Vector3(0, 0, key === 'simbolo' ? 30 : -20)); // Ajuste manual para legibilidad
+        const labelPos = pos.clone().add(new THREE.Vector3(0, 0, key === 'simbolo' ? 30 : -20));
         create3DText(labelText, labelPos, color, 10);
     }
 }
@@ -184,7 +172,6 @@ function create3DText(text, position, color, size) {
     const textMesh = new THREE.Mesh(textGeo, materials.text.clone());
     textMesh.material.color.setHex(color);
     textMesh.position.copy(position);
-    // NUEVO: Hacer que el texto mire a la cámara.
     textMesh.quaternion.copy(camera.quaternion);
     scene.add(textMesh);
 }
@@ -192,8 +179,20 @@ function create3DText(text, position, color, size) {
 function animate() {
     requestAnimationFrame(animate);
     controls.update();
-    // CAMBIO: Si los textos no rotan con la cámara, descomentar la siguiente línea.
-    // scene.children.forEach(child => { if(child.geometry instanceof TextGeometry) child.quaternion.copy(camera.quaternion); });
+    // CAMBIO: Asegurarse de que los textos siempre miren a la cámara durante la animación.
+    points.forEach(p => {
+        p.mesh.children.forEach(child => { // Si tuvieras texto adjunto a los puntos
+            if (child.isMesh && child.geometry instanceof TextGeometry) {
+                child.quaternion.copy(camera.quaternion);
+            }
+        });
+    });
+    scene.children.forEach(child => { // Y para los textos fijos de los planos
+        if(child.isMesh && child.geometry instanceof TextGeometry) {
+             child.quaternion.copy(camera.quaternion);
+        }
+    });
+
     renderer.render(scene, camera);
 }
 
@@ -321,10 +320,20 @@ function updatePointColor(point) {
     const wI = icono / sum;
     const wD = indice / sum;
     const wS = simbolo / sum;
-    const finalColor = new THREE.Color(0x000000);
-    finalColor.add(attractorColorsRGB.icono.clone().multiplyScalar(wI));
-    finalColor.add(attractorColorsRGB.indice.clone().multiplyScalar(wD));
-    finalColor.add(attractorColorsRGB.simbolo.clone().multiplyScalar(wS));
+
+    // CAMBIO: Aumentar la influencia de los colores multiplicando los pesos.
+    // Usamos un factor de 1.5 para hacer la contribución de cada color más fuerte.
+    // Esto es un balance entre saturación y mezcla.
+    const colorFactor = 1.5; 
+    
+    const finalColor = new THREE.Color(0x000000); // Empezamos desde negro
+    finalColor.add(attractorColorsRGB.icono.clone().multiplyScalar(wI * colorFactor));
+    finalColor.add(attractorColorsRGB.indice.clone().multiplyScalar(wD * colorFactor));
+    finalColor.add(attractorColorsRGB.simbolo.clone().multiplyScalar(wS * colorFactor));
+
+    // Asegurarse de que el color no se pase de los límites (0-1)
+    finalColor.clampScalar(0, 1);
+
     point.mesh.material.color.set(finalColor);
 }
 
@@ -342,7 +351,6 @@ function onWindowResize() {
     renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
-// CAMBIO: La función ahora calcula la posición en el plano XZ y la altura en el eje Y.
 function valuesToPosition(values) {
     const { icono, indice, simbolo } = values;
     const sum = icono + indice + simbolo || 1;
@@ -354,14 +362,12 @@ function valuesToPosition(values) {
     const pD = attractorPositions.indice;
     const pS = attractorPositions.simbolo;
 
-    // Las coordenadas baricéntricas ahora calculan la posición en X y Z.
     const x = pI.x * wI + pD.x * wD + pS.x * wS;
     const z = pI.z * wI + pD.z * wD + pS.z * wS;
 
-    // La altura (Y) se determina por la segunda tricotomía.
-    let y = 0; // Sinsigno (base)
-    if (values.type === 'Legisign') y = 150;  // Legisigno (arriba)
-    if (values.type === 'Qualisign') y = -150; // Qualisigno (abajo)
+    let y = 0;
+    if (values.type === 'Legisign') y = 150;
+    if (values.type === 'Qualisign') y = -150;
 
     return new THREE.Vector3(x, y, z);
 }
