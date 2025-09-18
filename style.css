@@ -24,6 +24,58 @@ canvas {
     z-index: -1;
 }
 
+/* NUEVO: Estilos para el contenedor de leyendas superior */
+#legend-container {
+    position: absolute;
+    top: 15px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 30px;
+    background-color: var(--panel-bg);
+    padding: 10px 20px;
+    border-radius: 12px;
+    border: 1px solid #333;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    z-index: 10;
+    font-size: 12px;
+}
+
+.legend-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.legend-title {
+    font-weight: bold;
+    color: var(--muted-color);
+    margin-bottom: 5px;
+    text-align: center;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.legend-item span {
+    font-family: monospace;
+    color: var(--accent-color);
+    width: 14px;
+    text-align: center;
+}
+
+.color-box {
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+
 #ui-container {
     position: absolute;
     top: 15px;
@@ -62,9 +114,7 @@ button:hover { background-color: #8e6dda; }
 #item-list { display: flex; flex-direction: column; gap: 5px; }
 .list-item { padding: 10px; background-color: #2a2a2e; border-radius: 6px; cursor: pointer; border: 2px solid transparent; transition: background-color 0.2s, border-color 0.2s; display: flex; justify-content: space-between; align-items: center; }
 .list-item:hover { background-color: #3a3a3e; }
-.list-item.selected { background-color: #4a4a4e; border-color: var(--accent-color); }
+/* CAMBIO: La clase 'selected' ahora solo controla el borde, el brillo se maneja en 3D */
+.list-item.selected { border-color: var(--accent-color); }
 .delete-btn { background-color: #ef4444; color: white; border: none; border-radius: 50%; width: 24px; height: 24px; cursor: pointer; font-weight: bold; }
-.legend { padding: 10px; background-color: rgba(0,0,0,0.2); border-radius: 8px; }
-.legend-list { list-style: none; padding: 0; margin: 0; font-size: 14px; }
-.legend-list li { display: flex; align-items: center; margin-bottom: 5px; }
-.legend-list span { display: inline-block; width: 20px; text-align: center; margin-right: 10px; color: var(--accent-color); }
+/* Estilos de leyendas anteriores eliminados */
