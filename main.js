@@ -8,6 +8,9 @@ const planeSize = 400;
 let scene, camera, renderer, controls, font;
 let points = [];
 let selectedPoint = null;
+// CAMBIO: Variable para guardar el estado original del material antes de hacerlo brillar
+let originalEmissive = { color: new THREE.Color(0x000000), intensity: 0 };
+
 const attractorPositions = {};
 const attractorColors = {
     icono:   0xef4444, // Rojo
@@ -37,10 +40,7 @@ const materials = {
     text: new THREE.MeshBasicMaterial({ color: 0xffffff })
 };
 
-const auraGeometry = new THREE.SphereGeometry(12, 32, 16);
-const auraMaterial = new THREE.MeshBasicMaterial({ color: 0xADD8E6, wireframe: true, transparent: true, opacity: 0.4 });
-const selectionAura = new THREE.Mesh(auraGeometry, auraMaterial);
-
+// --- AURA DE SELECCIÓN ELIMINADA ---
 
 const ui = {
     sliders: { icono: document.getElementById('icono'), indice: document.getElementById('indice'), simbolo: document.getElementById('simbolo') },
@@ -72,11 +72,10 @@ function init() {
     controls.enableDamping = true;
     controls.target.set(0, 0, 0);
 
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5); // Ligeramente más luz ambiente
     scene.add(ambientLight);
     
-    selectionAura.visible = false;
-    scene.add(selectionAura);
+    // --- AURA DE SELECCIÓN ELIMINADA DE LA ESCENA ---
 
     setupPrismVisuals();
     window.addEventListener('resize', onWindowResize);
@@ -85,37 +84,44 @@ function init() {
     animate();
 }
 
-function createTernaryGrid(radius, divisions) {
+// CAMBIO: La función ahora acepta un color para el plano de fondo.
+function createTernaryGrid(radius, divisions, planeColor) {
     const group = new THREE.Group();
-    const material = new THREE.LineBasicMaterial({ color: 0x666666, transparent: true, opacity: 0.5 });
+    const lineMaterial = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.25 });
 
     const v1 = new THREE.Vector3(radius * Math.cos(THREE.MathUtils.degToRad(150)), 0, radius * Math.sin(THREE.MathUtils.degToRad(150)));
     const v2 = new THREE.Vector3(radius * Math.cos(THREE.MathUtils.degToRad(30)), 0, radius * Math.sin(THREE.MathUtils.degToRad(30)));
     const v3 = new THREE.Vector3(radius * Math.cos(THREE.MathUtils.degToRad(270)), 0, radius * Math.sin(THREE.MathUtils.degToRad(270)));
     
+    // NUEVO: Crear el plano de fondo coloreado
+    if (planeColor) {
+        const planeGeometry = new THREE.BufferGeometry().setFromPoints([v1, v2, v3]);
+        const planeMaterial = new THREE.MeshBasicMaterial({
+            color: planeColor,
+            side: THREE.DoubleSide,
+            transparent: true,
+            opacity: 0.15
+        });
+        const planeMesh = new THREE.Mesh(planeGeometry, planeMaterial);
+        group.add(planeMesh);
+    }
+
     const vertices = [v1, v2, v3, v1];
     let geometry = new THREE.BufferGeometry().setFromPoints(vertices);
-    group.add(new THREE.Line(geometry, material));
+    group.add(new THREE.Line(geometry, lineMaterial));
 
-    for (let i = 1; i <= divisions; i++) {
+    for (let i = 1; i < divisions; i++) {
         const t = i / divisions;
-        
         const p12 = new THREE.Vector3().lerpVectors(v1, v2, t);
         const p13 = new THREE.Vector3().lerpVectors(v1, v3, t);
         const p23 = new THREE.Vector3().lerpVectors(v2, v3, t);
         const p21 = new THREE.Vector3().lerpVectors(v2, v1, t);
         const p31 = new THREE.Vector3().lerpVectors(v3, v1, t);
         const p32 = new THREE.Vector3().lerpVectors(v3, v2, t);
-
-        let line1_geom = new THREE.BufferGeometry().setFromPoints([p12, p13]);
-        let line2_geom = new THREE.BufferGeometry().setFromPoints([p23, p21]);
-        let line3_geom = new THREE.BufferGeometry().setFromPoints([p31, p32]);
-        
-        group.add(new THREE.Line(line1_geom, material));
-        group.add(new THREE.Line(line2_geom, material));
-        group.add(new THREE.Line(line3_geom, material));
+        group.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([p12, p13]), lineMaterial));
+        group.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([p23, p21]), lineMaterial));
+        group.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([p31, p32]), lineMaterial));
     }
-
     return group;
 }
 
@@ -135,19 +141,19 @@ function setupPrismVisuals() {
         scene.add(pointLight);
     }
     
+    // CAMBIO: Se definen los colores para cada plano
     const planes = [
-        { y: 0,   label: 'Sinsigno' },
-        { y: 150, label: 'Legisigno' },
-        { y: -150,label: 'Qualisigno' }
+        { y: 0,   label: 'Sinsigno',   color: 0x90ee90 }, // Verde claro
+        { y: 150, label: 'Legisigno',  color: 0xf08080 }, // Rojo claro
+        { y: -150,label: 'Qualisigno', color: 0xf08080 }  // Rojo claro
     ];
 
-    const ternaryGrid = createTernaryGrid(radius, 10);
-
     planes.forEach(p => {
-        const grid = ternaryGrid.clone();
+        // CAMBIO: Pasamos el color a la función que crea la rejilla
+        const grid = createTernaryGrid(radius, 10, p.color);
         grid.position.y = p.y;
         scene.add(grid);
-        create3DText(p.label, new THREE.Vector3(-radius - 80, p.y, 0), 0xffffff, 12);
+        // --- TEXTOS 3D ELIMINADOS ---
     });
 
     for (const key in attractorPositions) {
@@ -157,33 +163,18 @@ function setupPrismVisuals() {
         attractorMesh.material.color.setHex(color);
         attractorMesh.position.copy(pos);
         scene.add(attractorMesh);
-        
-        const labelText = key.charAt(0).toUpperCase() + key.slice(1);
-        const labelPos = pos.clone().add(new THREE.Vector3(0, 0, key === 'simbolo' ? 30 : -20));
-        create3DText(labelText, labelPos, color, 10);
+        // --- TEXTOS 3D ELIMINADOS ---
     }
 }
 
-function create3DText(text, position, color, size) {
-    if (!font) return;
-    const textGeo = new TextGeometry(text, { font, size, height: 2 });
-    textGeo.center();
-    const textMesh = new THREE.Mesh(textGeo, materials.text.clone());
-    textMesh.material.color.setHex(color);
-    textMesh.position.copy(position);
-    textMesh.quaternion.copy(camera.quaternion);
-    scene.add(textMesh);
-}
+// --- FUNCIÓN create3DText ELIMINADA O COMENTADA (YA NO SE USA) ---
+/*
+function create3DText(...) { ... }
+*/
 
 function animate() {
     requestAnimationFrame(animate);
     controls.update();
-    scene.children.forEach(child => {
-        if(child.isMesh && child.geometry instanceof TextGeometry) {
-             child.quaternion.copy(camera.quaternion);
-        }
-    });
-
     renderer.render(scene, camera);
 }
 
@@ -191,18 +182,9 @@ function onCanvasClick(event) {
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
     mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
     raycaster.setFromCamera(mouse, camera);
-    const intersects = raycaster.intersectObjects(scene.children);
-    let foundPoint = null;
-    if (intersects.length > 0) {
-        for (const intersect of intersects) {
-            const point = points.find(p => p.mesh === intersect.object);
-            if (point) {
-                foundPoint = point;
-                break; 
-            }
-        }
-    }
-    selectPoint(foundPoint);
+    const intersects = raycaster.intersectObjects(points.map(p => p.mesh)); // Intersectar solo con los puntos
+    
+    selectPoint(intersects.length > 0 ? points.find(p => p.mesh === intersects[0].object) : null);
 }
 
 
@@ -237,26 +219,40 @@ function deletePoint(idToDelete) {
         point.mesh.material.dispose();
         points.splice(index, 1);
         if (selectedPoint && selectedPoint.id === idToDelete) {
-            selectedPoint = null;
-            selectionAura.visible = false;
+            selectPoint(null); // Deseleccionar
         }
         updatePointList();
     }
 }
 
 function selectPoint(pointToSelect) {
-    if (selectedPoint && pointToSelect && selectedPoint.id === pointToSelect.id) return;
-    selectedPoint = pointToSelect;
+    // Si hay un punto previamente seleccionado, restaurar su material
     if (selectedPoint) {
-        selectionAura.position.copy(selectedPoint.mesh.position);
-        selectionAura.visible = true;
-        updateUIFromPoint(selectedPoint);
-    } else {
-        selectionAura.visible = false;
-        onControlsChange(); 
+        selectedPoint.mesh.material.emissive.set(originalEmissive.color);
+        selectedPoint.mesh.material.emissiveIntensity = originalEmissive.intensity;
     }
+
+    if (pointToSelect && selectedPoint?.id === pointToSelect.id) {
+        // Si se hace clic en el mismo punto, deseleccionarlo
+        selectedPoint = null;
+    } else {
+        selectedPoint = pointToSelect;
+    }
+    
+    if (selectedPoint) {
+        // Guardar el estado original y hacer que brille
+        originalEmissive.color.copy(selectedPoint.mesh.material.emissive);
+        originalEmissive.intensity = selectedPoint.mesh.material.emissiveIntensity;
+
+        selectedPoint.mesh.material.emissive.set(0xffffff); // Brillo blanco
+        selectedPoint.mesh.material.emissiveIntensity = 0.8;
+        
+        updateUIFromPoint(selectedPoint);
+    }
+    
     updatePointList();
 }
+
 
 function updatePointList() {
     ui.itemList.innerHTML = '';
@@ -293,7 +289,6 @@ function onControlsChange() {
         selectedPoint.values.type = ui.selects.type.value;
         selectedPoint.values.logic = ui.selects.logic.value;
         selectedPoint.mesh.position.copy(valuesToPosition(selectedPoint.values));
-        selectionAura.position.copy(selectedPoint.mesh.position);
         updatePointColor(selectedPoint);
         if (selectedPoint.mesh.geometry !== geometries[selectedPoint.values.logic]) {
             selectedPoint.mesh.geometry.dispose();
@@ -312,18 +307,16 @@ function updatePointColor(point) {
     const wD = indice / sum;
     const wS = simbolo / sum;
 
-    const colorFactor = 1.5; 
+    // CAMBIO: Aumentado el factor para colores más intensos.
+    const colorFactor = 2.2; 
     
     const finalColor = new THREE.Color(0x000000);
     finalColor.add(attractorColorsRGB.icono.clone().multiplyScalar(wI * colorFactor));
     finalColor.add(attractorColorsRGB.indice.clone().multiplyScalar(wD * colorFactor));
     finalColor.add(attractorColorsRGB.simbolo.clone().multiplyScalar(wS * colorFactor));
 
-    // LÍNEA ELIMINADA: finalColor.clampScalar(0, 1);
-
     point.mesh.material.color.set(finalColor);
 }
-
 
 function setupUIListeners() {
     ui.addBtn.addEventListener('click', addPoint);
@@ -353,7 +346,7 @@ function valuesToPosition(values) {
     const z = pI.z * wI + pD.z * wD + pS.z * wS;
 
     let y = 0;
-    if (values.type === 'Legisign') y = 150;
+    if (values.type === 'Legisigno') y = 150;
     if (values.type === 'Qualisigno') y = -150;
 
     return new THREE.Vector3(x, y, z);
