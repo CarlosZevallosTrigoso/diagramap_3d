@@ -15,7 +15,13 @@ const attractorColors = {
     simbolo: 0x38bdf8  // Azul
 };
 
-// NUEVO: Variables para el Raycasting
+// NUEVO: Convertimos los colores hexadecimales a objetos THREE.Color para poder mezclarlos.
+const attractorColorsRGB = {
+    icono:   new THREE.Color(attractorColors.icono),
+    indice:  new THREE.Color(attractorColors.indice),
+    simbolo: new THREE.Color(attractorColors.simbolo)
+};
+
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
 
@@ -27,6 +33,7 @@ const geometries = {
 const logicToShapeName = { Rheme: 'Esfera', Dicent: 'Cono', Argument: 'Octaedro' };
 
 const materials = {
+    // CAMBIO: El material por defecto ahora es blanco. Su color se modificará dinámicamente.
     default: new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5 }),
     attractor: new THREE.MeshBasicMaterial({ side: THREE.DoubleSide }),
     text: new THREE.MeshBasicMaterial({ color: 0xffffff })
@@ -74,8 +81,6 @@ function init() {
 
     setupPrismVisuals();
     window.addEventListener('resize', onWindowResize);
-    
-    // NUEVO: Añadimos el listener para el clic del mouse en el canvas.
     renderer.domElement.addEventListener('click', onCanvasClick);
     
     animate();
@@ -135,35 +140,25 @@ function animate() {
     renderer.render(scene, camera);
 }
 
-// NUEVO: Función para manejar los clics en la escena 3D.
 function onCanvasClick(event) {
-    // Calcula la posición del mouse en coordenadas normalizadas (-1 a +1)
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
     mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
 
-    // Actualiza el raycaster con la cámara y la posición del mouse
     raycaster.setFromCamera(mouse, camera);
 
-    // Obtiene la lista de objetos que el rayo intersecta.
-    // Solo nos interesan los objetos que son 'hijos' directos de la escena.
     const intersects = raycaster.intersectObjects(scene.children);
 
     let foundPoint = null;
     if (intersects.length > 0) {
-        // Recorremos los objetos intersectados.
         for (const intersect of intersects) {
-            // Buscamos si el objeto 3D intersectado (intersect.object) 
-            // corresponde a algún 'mesh' de nuestros puntos.
             const point = points.find(p => p.mesh === intersect.object);
             if (point) {
                 foundPoint = point;
-                break; // Si encontramos uno, dejamos de buscar.
+                break; 
             }
         }
     }
     
-    // Si encontramos un punto, lo seleccionamos.
-    // Si no (foundPoint es null), deseleccionamos el actual.
     selectPoint(foundPoint);
 }
 
@@ -181,11 +176,15 @@ function addPoint() {
     };
 
     const geometry = geometries[values.logic];
+    // CAMBIO: Usamos el material por defecto, que luego colorearemos.
     const mesh = new THREE.Mesh(geometry, materials.default.clone());
     mesh.position.copy(valuesToPosition(values));
     if (values.logic === 'Dicent') mesh.rotation.x = -Math.PI / 2;
 
     const point = { id: THREE.MathUtils.generateUUID(), name, values, mesh };
+    
+    // NUEVO: Actualizamos el color del punto recién creado.
+    updatePointColor(point);
     
     points.push(point);
     scene.add(mesh);
@@ -210,7 +209,6 @@ function deletePoint(idToDelete) {
 }
 
 function selectPoint(pointToSelect) {
-    // Si hacemos clic en el mismo punto que ya está seleccionado, no hacemos nada.
     if (selectedPoint && pointToSelect && selectedPoint.id === pointToSelect.id) {
         return;
     }
@@ -223,7 +221,6 @@ function selectPoint(pointToSelect) {
         updateUIFromPoint(selectedPoint);
     } else {
         selectionAura.visible = false;
-        // Si no seleccionamos nada, reseteamos la UI a los valores por defecto.
         onControlsChange(); 
     }
     updatePointList();
@@ -271,6 +268,9 @@ function onControlsChange() {
         
         selectionAura.position.copy(selectedPoint.mesh.position);
 
+        // NUEVO: Cada vez que el punto cambia de posición, actualizamos su color.
+        updatePointColor(selectedPoint);
+
         if (selectedPoint.mesh.geometry !== geometries[selectedPoint.values.logic]) {
             selectedPoint.mesh.geometry.dispose();
             selectedPoint.mesh.geometry = geometries[selectedPoint.values.logic];
@@ -279,6 +279,29 @@ function onControlsChange() {
         }
     }
 }
+
+// NUEVO: Esta función calcula y aplica el color al objeto.
+function updatePointColor(point) {
+    if (!point) return;
+
+    // Obtenemos los pesos (weights) igual que para la posición.
+    const { icono, indice, simbolo } = point.values;
+    const sum = icono + indice + simbolo || 1;
+    const wI = icono / sum;
+    const wD = indice / sum;
+    const wS = simbolo / sum;
+
+    // Empezamos con un color base (negro) y vamos añadiendo los colores de los atractores
+    // multiplicados por su peso.
+    const finalColor = new THREE.Color(0x000000);
+    finalColor.add(attractorColorsRGB.icono.clone().multiplyScalar(wI));
+    finalColor.add(attractorColorsRGB.indice.clone().multiplyScalar(wD));
+    finalColor.add(attractorColorsRGB.simbolo.clone().multiplyScalar(wS));
+
+    // Aplicamos el color final al material del objeto.
+    point.mesh.material.color.set(finalColor);
+}
+
 
 function setupUIListeners() {
     ui.addBtn.addEventListener('click', addPoint);
