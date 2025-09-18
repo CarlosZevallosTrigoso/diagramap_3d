@@ -37,9 +37,8 @@ const materials = {
     text: new THREE.MeshBasicMaterial({ color: 0xffffff })
 };
 
-// CAMBIO: Material del aura de selección: color más suave, opacidad reducida.
 const auraGeometry = new THREE.SphereGeometry(12, 32, 16);
-const auraMaterial = new THREE.MeshBasicMaterial({ color: 0xADD8E6, wireframe: true, transparent: true, opacity: 0.4 }); // Azul claro, más transparente
+const auraMaterial = new THREE.MeshBasicMaterial({ color: 0xADD8E6, wireframe: true, transparent: true, opacity: 0.4 });
 const selectionAura = new THREE.Mesh(auraGeometry, auraMaterial);
 
 
@@ -179,15 +178,7 @@ function create3DText(text, position, color, size) {
 function animate() {
     requestAnimationFrame(animate);
     controls.update();
-    // CAMBIO: Asegurarse de que los textos siempre miren a la cámara durante la animación.
-    points.forEach(p => {
-        p.mesh.children.forEach(child => { // Si tuvieras texto adjunto a los puntos
-            if (child.isMesh && child.geometry instanceof TextGeometry) {
-                child.quaternion.copy(camera.quaternion);
-            }
-        });
-    });
-    scene.children.forEach(child => { // Y para los textos fijos de los planos
+    scene.children.forEach(child => {
         if(child.isMesh && child.geometry instanceof TextGeometry) {
              child.quaternion.copy(camera.quaternion);
         }
@@ -321,18 +312,14 @@ function updatePointColor(point) {
     const wD = indice / sum;
     const wS = simbolo / sum;
 
-    // CAMBIO: Aumentar la influencia de los colores multiplicando los pesos.
-    // Usamos un factor de 1.5 para hacer la contribución de cada color más fuerte.
-    // Esto es un balance entre saturación y mezcla.
     const colorFactor = 1.5; 
     
-    const finalColor = new THREE.Color(0x000000); // Empezamos desde negro
+    const finalColor = new THREE.Color(0x000000);
     finalColor.add(attractorColorsRGB.icono.clone().multiplyScalar(wI * colorFactor));
     finalColor.add(attractorColorsRGB.indice.clone().multiplyScalar(wD * colorFactor));
     finalColor.add(attractorColorsRGB.simbolo.clone().multiplyScalar(wS * colorFactor));
 
-    // Asegurarse de que el color no se pase de los límites (0-1)
-    finalColor.clampScalar(0, 1);
+    // LÍNEA ELIMINADA: finalColor.clampScalar(0, 1);
 
     point.mesh.material.color.set(finalColor);
 }
@@ -367,7 +354,7 @@ function valuesToPosition(values) {
 
     let y = 0;
     if (values.type === 'Legisign') y = 150;
-    if (values.type === 'Qualisign') y = -150;
+    if (values.type === 'Qualisigno') y = -150;
 
     return new THREE.Vector3(x, y, z);
 }
