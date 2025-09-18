@@ -8,6 +8,27 @@
 </head>
 <body>
 
+    <div id="legend-container">
+        <div class="legend-group">
+            <div class="legend-title">EJE VERTICAL</div>
+            <div class="legend-item"><span class="color-box" style="background-color: rgba(240, 128, 128, 0.5);"></span>Legisigno (Arriba)</div>
+            <div class="legend-item"><span class="color-box" style="background-color: rgba(144, 238, 144, 0.5);"></span>Sinsigno (Medio)</div>
+            <div class="legend-item"><span class="color-box" style="background-color: rgba(240, 128, 128, 0.5);"></span>Qualisigno (Base)</div>
+        </div>
+        <div class="legend-group">
+            <div class="legend-title">ATRACTORES</div>
+            <div class="legend-item"><span class="color-box" style="background-color: #ef4444;"></span>Ícono</div>
+            <div class="legend-item"><span class="color-box" style="background-color: #22c56e;"></span>Índice</div>
+            <div class="legend-item"><span class="color-box" style="background-color: #38bdf8;"></span>Símbolo</div>
+        </div>
+        <div class="legend-group">
+            <div class="legend-title">FORMA</div>
+             <div class="legend-item"><span>●</span>Rema</div>
+             <div class="legend-item"><span>▲</span>Dicente</div>
+             <div class="legend-item"><span>♦</span>Argumento</div>
+        </div>
+    </div>
+
     <div id="ui-container">
         <div class="panel-section">
             <h1>Prisma Semiótico</h1>
@@ -24,7 +45,7 @@
         
         <div class="scroll-area">
             <div class="panel-section">
-                <h2>1ª Tricotomía (Posición XY)</h2>
+                <h2>1ª Tricotomía (Posición XZ)</h2>
                 <label>Ícono: <span id="iconoVal">33/100</span></label>
                 <input id="icono" type="range" min="1" max="100" value="33">
 
@@ -36,7 +57,7 @@
             </div>
 
             <div class="panel-section">
-                <h2>2ª Tricotomía (Altura Z)</h2>
+                <h2>2ª Tricotomía (Altura Y)</h2>
                 <label for="type-select">Tipo de Signo:</label>
                 <select id="type-select">
                     <option value="Sinsign" selected>Sinsigno (Existente)</option>
@@ -54,18 +75,7 @@
                     <option value="Argument">Argumento (Inferencia)</option>
                 </select>
             </div>
-
-            <div class="panel-section">
-                <div class="legend">
-                    <h3>Leyenda de Formas</h3>
-                    <ul class="legend-list">
-                        <li><span class="shape-sphere">●</span> Esfera: Rema</li>
-                        <li><span class="shape-cone">▲</span> Cono: Dicente</li>
-                        <li><span class="shape-octa">♦</span> Octaedro: Argumento</li>
-                    </ul>
-                </div>
-            </div>
-        </div>
+             </div>
     </div>
 
     <script type="importmap">
